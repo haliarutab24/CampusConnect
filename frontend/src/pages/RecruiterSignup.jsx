@@ -1,25 +1,83 @@
 import axios from "axios";
 import { Lock, Mail, Upload, UserRound, LoaderCircle } from "lucide-react";
-import React, { useContext, useState } from "react";
-import { Link, useNavigate } from "react-router-dom"; // ✅ Added useNavigate
+import React, { useContext, useRef, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import Footer from "../components/Footer";
 import Navbar from "../components/Navbar";
 import { AppContext } from "../context/AppContext";
 import toast from "react-hot-toast";
+
+const getPasswordStrength = (password) => {
+  if (!password) return { label: "", score: 0 };
+
+  let score = 0;
+
+  if (password.length >= 8) score++;
+  if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score++;
+  if (/\d/.test(password)) score++;
+  if (/[^A-Za-z0-9]/.test(password)) score++;
+
+  if (score <= 1) return { label: "Weak", score };
+  if (score <= 3) return { label: "Medium", score };
+  return { label: "Strong", score };
+};
 
 const RecruiterSignup = () => {
   const [companyLogo, setCompanyLogo] = useState(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [passwordStrength, setPasswordStrength] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const previousStrength = useRef("");
 
   const { backendUrl, setCompanyData, setCompanyToken } =
     useContext(AppContext);
   const navigate = useNavigate();
 
+  const handlePasswordChange = (e) => {
+    const value = e.target.value;
+    setPassword(value);
+
+    const strength = getPasswordStrength(value);
+    setPasswordStrength(strength.label);
+
+    if (value && previousStrength.current !== strength.label) {
+      previousStrength.current = strength.label;
+
+      if (strength.label === "Weak") {
+        toast.error("Password strength: Weak");
+      } else if (strength.label === "Medium") {
+        toast("Password strength: Medium");
+      } else if (strength.label === "Strong") {
+        toast.success("Password strength: Strong");
+      }
+    }
+
+    if (!value) {
+      previousStrength.current = "";
+      setPasswordStrength("");
+    }
+  };
+
   const recruiterSignup = async (e) => {
     e.preventDefault();
+
+    const strength = getPasswordStrength(password);
+
+    if (strength.label === "Weak") {
+      toast.error(
+        "Please use a stronger password with uppercase, lowercase, number, special character, and at least 8 characters."
+      );
+      return;
+    }
+
+    if (!companyLogo) {
+      toast.error("Please upload company logo");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -32,11 +90,11 @@ const RecruiterSignup = () => {
       const { data } = await axios.post(
         `${backendUrl}/company/register-company`,
         formData,
-         {
-        headers: {
-          "Content-Type": "multipart/form-data", // ✅ ensure correct header
-        },
-      }
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
       );
 
       if (data.success) {
@@ -133,10 +191,46 @@ const RecruiterSignup = () => {
                     placeholder="Create password"
                     className="w-full outline-none text-sm bg-transparent"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={handlePasswordChange}
+                    autoComplete="new-password"
                     required
                   />
                 </div>
+
+                {password && (
+                  <div className="space-y-2">
+                    <p
+                      className={`text-sm font-medium ${
+                        passwordStrength === "Weak"
+                          ? "text-red-500"
+                          : passwordStrength === "Medium"
+                          ? "text-yellow-500"
+                          : "text-green-600"
+                      }`}
+                    >
+                      Password Strength: {passwordStrength}
+                    </p>
+
+                    <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full transition-all duration-300 ${
+                          passwordStrength === "Weak"
+                            ? "w-1/3 bg-red-500"
+                            : passwordStrength === "Medium"
+                            ? "w-2/3 bg-yellow-500"
+                            : "w-full bg-green-500"
+                        }`}
+                      ></div>
+                    </div>
+
+                    <ul className="text-xs text-gray-500 space-y-1 pl-1">
+                      <li>• At least 8 characters</li>
+                      <li>• Include uppercase and lowercase letters</li>
+                      <li>• Include at least one number</li>
+                      <li>• Include at least one special character</li>
+                    </ul>
+                  </div>
+                )}
               </div>
 
               {/* Terms */}
