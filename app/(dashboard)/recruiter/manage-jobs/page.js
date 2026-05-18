@@ -60,46 +60,35 @@ export default function ManageJobsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-gray-50">
-                <tr className="text-left text-gray-500">
-                  <th className="px-5 py-3 font-medium">Job Title</th>
-                  <th className="px-5 py-3 font-medium">Location</th>
-                  <th className="px-5 py-3 font-medium">Applicants</th>
-                  <th className="px-5 py-3 font-medium">Status</th>
-                  <th className="px-5 py-3 font-medium">Posted</th>
-                  <th className="px-5 py-3 font-medium">Actions</th>
+                <tr className="text-left text-xs font-semibold text-gray-500 tracking-wider uppercase">
+                  <th className="px-5 py-4">#</th>
+                  <th className="px-5 py-4">Job Title</th>
+                  <th className="px-5 py-4">Location</th>
+                  <th className="px-5 py-4">Date</th>
+                  <th className="px-5 py-4 text-center">Applicants</th>
+                  <th className="px-5 py-4 text-center">Visible</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
-                {jobs.map((job) => (
-                  <tr key={job.id} className="hover:bg-gray-50">
-                    <td className="px-5 py-4 font-medium text-gray-800">{job.title}</td>
-                    <td className="px-5 py-4 text-gray-600 flex items-center gap-1">
-                      <MapPin size={14} className="text-gray-400" /> {job.location}
+              <tbody className="divide-y divide-gray-100 bg-white">
+                {jobs.map((job, index) => (
+                  <tr key={job.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-5 py-4 text-sm text-gray-500">{index + 1}</td>
+                    <td className="px-5 py-4 text-sm font-medium text-gray-800">{job.title}</td>
+                    <td className="px-5 py-4 text-sm text-gray-500">{job.location}</td>
+                    <td className="px-5 py-4 text-sm text-gray-500">{moment(job.createdAt).format("MMM DD, YYYY")}</td>
+                    <td className="px-5 py-4 text-sm text-center">
+                      <span className="text-blue-600 font-medium">{job.applicants}</span>
                     </td>
-                    <td className="px-5 py-4">
-                      <span className="flex items-center gap-1 text-gray-600">
-                        <Users size={14} /> {job.applicants}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${
-                        job.status === "Open" ? "bg-green-50 text-green-600" : "bg-gray-100 text-gray-500"
-                      }`}>
-                        {job.status}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4 text-gray-500">{moment(job.createdAt).format("ll")}</td>
-                    <td className="px-5 py-4">
-                      {job.status === "Open" ? (
-                        <button
-                          onClick={() => handleCloseJob(job.id)}
-                          className="text-red-500 hover:text-red-700 text-xs font-medium flex items-center gap-1 cursor-pointer"
-                        >
-                          <XCircle size={14} /> Close
-                        </button>
-                      ) : (
-                        <span className="text-gray-400 text-xs">Closed</span>
-                      )}
+                    <td className="px-5 py-4 text-center">
+                      <input 
+                        type="checkbox" 
+                        checked={job.status === "Open"} 
+                        onChange={() => {
+                          if (job.status === "Open") handleCloseJob(job.id);
+                        }}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                        disabled={job.status !== "Open"}
+                      />
                     </td>
                   </tr>
                 ))}

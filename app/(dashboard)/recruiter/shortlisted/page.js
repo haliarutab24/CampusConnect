@@ -3,6 +3,21 @@
 import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import { LoaderCircle, CheckCircle, XCircle, FileText, Star } from "lucide-react";
+import moment from "moment";
+
+const getDisplayFilename = (url) => {
+  if (!url) return "";
+  const parts = url.split('/');
+  const name = parts[parts.length - 1];
+  
+  if (name.match(/^[a-f0-9]{24}-\d+\.(pdf|doc|docx)$/i)) {
+    return "Resume Document";
+  }
+
+  const match = name.match(/^\d+-(.+)$/);
+  const cleanName = match ? match[1] : name;
+  return cleanName.length > 20 ? cleanName.substring(0, 17) + "..." : cleanName;
+};
 
 export default function ShortlistedPage() {
   const [applicants, setApplicants] = useState([]);
@@ -51,63 +66,81 @@ export default function ShortlistedPage() {
           No shortlisted or accepted applicants yet.
         </div>
       ) : (
-        <div className="grid gap-4">
-          {applicants.map((app) => (
-            <div key={app._id} className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-              <div className="flex flex-col sm:flex-row justify-between gap-4">
-                <div className="flex items-start gap-4">
-                  <img
-                    src={(!app.applicant?.image || app.applicant?.image === "/profile_img.png") ? "/premium-avatar.png" : app.applicant?.image}
-                    alt={app.applicant?.name}
-                    className="w-12 h-12 rounded-full object-cover border-2 border-green-100"
-                  />
-                  <div>
-                    <h3 className="font-semibold text-gray-800">{app.applicant?.name}</h3>
-                    <p className="text-sm text-gray-500">{app.applicant?.email}</p>
-                    <p className="text-sm text-blue-600 mt-1">
-                      {app.job?.title} • {app.job?.location}
-                    </p>
-                    {app.applicant?.skills?.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {app.applicant.skills.map((s, i) => (
-                          <span key={i} className="bg-green-50 text-green-600 text-[10px] px-2 py-0.5 rounded-full">{s}</span>
-                        ))}
+        <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50">
+                <tr className="text-left text-xs font-semibold text-gray-500 tracking-wider uppercase">
+                  <th className="px-5 py-4">#</th>
+                  <th className="px-5 py-4">User</th>
+                  <th className="px-5 py-4">Job Title</th>
+                  <th className="px-5 py-4">Location</th>
+                  <th className="px-5 py-4">Date</th>
+                  <th className="px-5 py-4 text-center">Resume</th>
+                  <th className="px-5 py-4 text-center">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 bg-white">
+                {applicants.map((app, index) => (
+                  <tr key={app._id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-5 py-4 text-sm text-gray-500">{index + 1}</td>
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={(!app.applicant?.image || app.applicant?.image === "/profile_img.png") ? "/premium-avatar.png" : app.applicant?.image}
+                          alt={app.applicant?.name}
+                          className="w-8 h-8 rounded-full object-cover border border-gray-200"
+                        />
+                        <span className="font-medium text-gray-800">{app.applicant?.name}</span>
                       </div>
-                    )}
-                    <div className="flex items-center gap-3 mt-2">
-                      <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${
-                        app.status === "Accepted" ? "bg-green-100 text-green-700" : "bg-blue-50 text-blue-600"
-                      }`}>
-                        {app.status}
-                      </span>
-                      {app.applicant?.resume && (
-                        <a href={app.applicant.resume} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline flex items-center gap-1">
-                          <FileText size={12} /> Resume
+                    </td>
+                    <td className="px-5 py-4 text-sm text-gray-600">{app.job?.title}</td>
+                    <td className="px-5 py-4 text-sm text-gray-500">{app.job?.location}</td>
+                    <td className="px-5 py-4 text-sm text-gray-500">{moment(app.createdAt).format("MMM DD, YYYY")}</td>
+                    <td className="px-5 py-4 text-center">
+                      {app.applicant?.resume ? (
+                        <a
+                          href={app.applicant.resume}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                          title={app.applicant.resume}
+                        >
+                          View {getDisplayFilename(app.applicant.resume)} <FileText size={12} />
                         </a>
+                      ) : (
+                        <span className="text-gray-400 text-xs">No Resume</span>
                       )}
-                    </div>
-                  </div>
-                </div>
-
-                {app.status === "Shortlisted" && (
-                  <div className="flex items-start gap-2">
-                    <button
-                      onClick={() => handleStatusChange(app._id, "Accepted")}
-                      className="flex items-center gap-1 bg-green-50 text-green-600 hover:bg-green-100 px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer"
-                    >
-                      <CheckCircle size={14} /> Accept
-                    </button>
-                    <button
-                      onClick={() => handleStatusChange(app._id, "Rejected")}
-                      className="flex items-center gap-1 bg-red-50 text-red-500 hover:bg-red-100 px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer"
-                    >
-                      <XCircle size={14} /> Reject
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
+                    </td>
+                    <td className="px-5 py-4">
+                      {app.status === "Shortlisted" ? (
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={() => handleStatusChange(app._id, "Accepted")}
+                            className="bg-green-50 text-green-600 hover:bg-green-100 px-3 py-1.5 rounded text-xs font-medium transition-colors"
+                          >
+                            Accept
+                          </button>
+                          <button
+                            onClick={() => handleStatusChange(app._id, "Rejected")}
+                            className="bg-red-50 text-red-500 hover:bg-red-100 px-3 py-1.5 rounded text-xs font-medium transition-colors"
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="text-center">
+                          <span className="bg-green-100 text-green-700 px-3 py-1.5 rounded text-xs font-medium inline-block">
+                            Accepted
+                          </span>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

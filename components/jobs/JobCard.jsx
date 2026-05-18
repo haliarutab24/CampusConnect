@@ -3,9 +3,12 @@
 import Link from "next/link";
 import { MapPin, Clock, Briefcase, IndianRupee } from "lucide-react";
 import moment from "moment";
+import { useState } from "react";
+import ApplyJobModal from "./ApplyJobModal";
 
 export default function JobCard({ job }) {
   const company = job.postedBy || {};
+  const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
 
   return (
     <div className="group bg-white border border-gray-200 rounded-xl p-5 hover:shadow-lg hover:border-blue-200 transition-all duration-300 animate-fadeIn">
@@ -60,8 +63,24 @@ export default function JobCard({ job }) {
               {job.matchScore}% match
             </span>
           )}
+          <button 
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsApplyModalOpen(true);
+            }}
+            className="mt-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-5 py-1.5 rounded-lg text-sm font-medium hover:from-blue-700 hover:to-indigo-700 transition-all shadow-sm cursor-pointer"
+          >
+            Apply Now
+          </button>
         </div>
       </div>
+      
+      <ApplyJobModal 
+        isOpen={isApplyModalOpen} 
+        onClose={() => setIsApplyModalOpen(false)} 
+        job={job} 
+      />
     </div>
   );
 }

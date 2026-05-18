@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import connectDB from "@/lib/db";
 import User from "@/lib/models/User";
-import { uploadToCloudinary } from "@/lib/cloudinary";
+import fs from "fs/promises";
+import path from "path";
 
 // POST /api/users/resume - Upload resume
 export async function POST(request) {
@@ -27,17 +28,41 @@ export async function POST(request) {
       );
     }
 
+    const allowedTypes = [
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      return NextResponse.json(
+        { success: false, message: "Only PDF and Word documents are allowed (.pdf, .doc, .docx)" },
+        { status: 400 }
+      );
+    }
+
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    const uploadResult = await uploadToCloudinary(buffer, {
-      folder: "campus-connect/resumes",
-      resource_type: "raw",
-    });
+    // Save locally to public/uploads/resumes
+    const uploadDir = path.join(process.cwd(), "public", "uploads", "resumes");
+    try {
+      await fs.access(uploadDir);
+    } catch {
+      await fs.mkdir(uploadDir, { recursive: true });
+    }
+
+    const ext = path.extname(file.name) || (file.type === "application/pdf" ? ".pdf" : ".docx");
+    const safeOriginalName = file.name ? file.name.replace(/[^a-zA-Z0-9.-]/g, '_') : `resume${ext}`;
+    const filename = `${Date.now()}-${safeOriginalName}`;
+    const filepath = path.join(uploadDir, filename);
+
+    await fs.writeFile(filepath, buffer);
+    const resumeUrl = `/uploads/resumes/${filename}`;
 
     const user = await User.findByIdAndUpdate(
       session.user.id,
-      { resume: uploadResult.secure_url },
+      { resume: resumeUrl },
       { new: true }
     );
 

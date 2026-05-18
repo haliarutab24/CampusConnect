@@ -57,6 +57,9 @@ export async function PUT(request) {
     // Handle text fields
     const name = formData.get("name");
     const bio = formData.get("bio");
+    const title = formData.get("title");
+    const coverLetter = formData.get("coverLetter");
+    const resume = formData.get("resume");
     const skills = formData.get("skills");
     const companyName = formData.get("companyName");
     const description = formData.get("description");
@@ -65,21 +68,29 @@ export async function PUT(request) {
 
     if (name) updateData.name = name;
     if (bio !== null) updateData.bio = bio;
+    if (title !== null) updateData.title = title;
+    if (coverLetter !== null) updateData.coverLetter = coverLetter;
+    if (resume !== null && typeof resume === 'string') updateData.resume = resume;
     if (skills) updateData.skills = skills.split(",").map((s) => s.trim()).filter(Boolean);
     if (companyName) updateData.companyName = companyName;
     if (description !== null) updateData.description = description;
     if (website !== null) updateData.website = website;
     if (location !== null) updateData.location = location;
 
-    // Handle image upload
-    const imageFile = formData.get("image");
-    if (imageFile && imageFile.size > 0) {
-      const bytes = await imageFile.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-      const uploadResult = await uploadToCloudinary(buffer, {
-        folder: "campus-connect/avatars",
-      });
-      updateData.image = uploadResult.secure_url;
+    // Handle image upload or delete
+    const deleteImage = formData.get("deleteImage");
+    if (deleteImage === "true") {
+      updateData.image = "/premium-avatar.png";
+    } else {
+      const imageFile = formData.get("image");
+      if (imageFile && imageFile.size > 0) {
+        const bytes = await imageFile.arrayBuffer();
+        const buffer = Buffer.from(bytes);
+        const uploadResult = await uploadToCloudinary(buffer, {
+          folder: "campus-connect/avatars",
+        });
+        updateData.image = uploadResult.secure_url;
+      }
     }
 
     const user = await User.findByIdAndUpdate(session.user.id, updateData, {

@@ -21,8 +21,8 @@ const studentLinks = [
 const recruiterLinks = [
   { name: "Manage Jobs", path: "/recruiter/manage-jobs", icon: LayoutDashboard },
   { name: "Add Job", path: "/recruiter/add-job", icon: PlusCircle },
-  { name: "Applicants", path: "/recruiter/applicants", icon: Users },
-  { name: "Shortlisted", path: "/recruiter/shortlisted", icon: CheckCircle },
+  { name: "Apply Applicants", path: "/recruiter/applicants", icon: Users },
+  { name: "ShortListed Applications", path: "/recruiter/shortlisted", icon: CheckCircle },
 ];
 
 export default function DashboardLayout({ children }) {
