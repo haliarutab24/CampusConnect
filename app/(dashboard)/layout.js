@@ -8,6 +8,7 @@ import { toast } from "react-hot-toast";
 import {
   GraduationCap, Bell, LogOut, LoaderCircle, Briefcase, PlusCircle,
   Users, CheckCircle, User, FileText, Sparkles, Star, LayoutDashboard, Menu, X,
+  Calendar,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -23,6 +24,7 @@ const recruiterLinks = [
   { name: "Add Job", path: "/recruiter/add-job", icon: PlusCircle },
   { name: "Apply Applicants", path: "/recruiter/applicants", icon: Users },
   { name: "ShortListed Applications", path: "/recruiter/shortlisted", icon: CheckCircle },
+  { name: "Availability", path: "/recruiter/availability", icon: Calendar },
 ];
 
 export default function DashboardLayout({ children }) {

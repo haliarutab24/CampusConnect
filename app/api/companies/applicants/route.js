@@ -23,7 +23,7 @@ export async function GET() {
     })
       .populate("applicant", "name image resume skills bio email")
       .populate("job", "title location level category")
-      .sort({ createdAt: -1 });
+      .sort({ matchScore: -1, createdAt: -1 });
 
     return NextResponse.json({ success: true, applicants });
   } catch (error) {

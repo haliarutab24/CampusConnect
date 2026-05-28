@@ -5,6 +5,7 @@ import Application from "@/lib/models/Application";
 import Job from "@/lib/models/Job";
 import User from "@/lib/models/User";
 import { calculateMatchScore } from "@/lib/matching";
+import Booking from "@/lib/models/Booking";
 
 // GET /api/applications - Get current user's applications
 export async function GET() {
@@ -24,6 +25,7 @@ export async function GET() {
     })
       .populate("recruiter", "name email image companyName")
       .populate("job", "title location category level salary")
+      .populate("booking")
       .sort({ createdAt: -1 });
 
     return NextResponse.json({

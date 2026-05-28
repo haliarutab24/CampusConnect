@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
-import { LoaderCircle, CheckCircle, XCircle, FileText, Star } from "lucide-react";
+import { LoaderCircle, CheckCircle, XCircle, FileText, Star, Video, X, Calendar, ExternalLink } from "lucide-react";
 import moment from "moment";
 
 const getDisplayFilename = (url) => {
@@ -22,6 +22,7 @@ const getDisplayFilename = (url) => {
 export default function ShortlistedPage() {
   const [applicants, setApplicants] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [interviewModal, setInterviewModal] = useState(null); // { appId, link, scheduledAt, saving }
 
   const fetchShortlisted = async () => {
     try {
@@ -52,6 +53,41 @@ export default function ShortlistedPage() {
     }
   };
 
+  const handleSaveInterview = async () => {
+    if (!interviewModal) return;
+    const { appId, link, scheduledAt } = interviewModal;
+
+    if (!link || !link.trim()) {
+      toast.error("Please enter a Google Meet link");
+      return;
+    }
+
+    setInterviewModal((prev) => ({ ...prev, saving: true }));
+
+    try {
+      const res = await fetch(`/api/applications/${appId}/interview`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          interviewLink: link.trim(),
+          interviewScheduledAt: scheduledAt || null,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(data.message);
+        setInterviewModal(null);
+        fetchShortlisted();
+      } else {
+        toast.error(data.message);
+      }
+    } catch {
+      toast.error("Failed to save interview details");
+    } finally {
+      setInterviewModal((prev) => prev ? { ...prev, saving: false } : null);
+    }
+  };
+
   if (loading) return <div className="flex items-center justify-center h-64"><LoaderCircle className="animate-spin text-blue-500 w-8 h-8" /></div>;
 
   return (
@@ -77,6 +113,7 @@ export default function ShortlistedPage() {
                   <th className="px-5 py-4">Location</th>
                   <th className="px-5 py-4">Date</th>
                   <th className="px-5 py-4 text-center">Resume</th>
+                  <th className="px-5 py-4 text-center">Interview</th>
                   <th className="px-5 py-4 text-center">Status</th>
                 </tr>
               </thead>
@@ -112,6 +149,43 @@ export default function ShortlistedPage() {
                         <span className="text-gray-400 text-xs">No Resume</span>
                       )}
                     </td>
+
+                    {/* Interview Column */}
+                    <td className="px-5 py-4 text-center">
+                      {app.interviewLink ? (
+                        <div className="flex flex-col items-center gap-1">
+                          <a
+                            href={app.interviewLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 bg-blue-500 text-white hover:bg-blue-600 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all animate-pulse-glow cursor-pointer"
+                          >
+                            <Video size={13} /> Join Meet
+                          </a>
+                          {app.interviewScheduledAt && (
+                            <span className="text-[10px] text-gray-400 flex items-center gap-0.5">
+                              <Calendar size={9} /> {moment(app.interviewScheduledAt).format("MMM DD, h:mm A")}
+                            </span>
+                          )}
+                        </div>
+                      ) : app.status === "Shortlisted" ? (
+                        <div className="flex flex-col items-center gap-1.5">
+                          <span className="text-[10px] text-emerald-600 font-medium bg-emerald-50 px-2 py-0.5 rounded-full">
+                            Awaiting candidate booking
+                          </span>
+                          <button
+                            onClick={() => setInterviewModal({ appId: app._id, link: "", scheduledAt: "", saving: false })}
+                            className="inline-flex items-center gap-1 text-gray-400 hover:text-blue-600 text-[10px] transition-colors cursor-pointer"
+                            title="Manually set a Meet link"
+                          >
+                            <Video size={10} /> Add link manually
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-gray-300 text-xs">—</span>
+                      )}
+                    </td>
+
                     <td className="px-5 py-4">
                       {app.status === "Shortlisted" ? (
                         <div className="flex items-center justify-center gap-2">
@@ -140,6 +214,80 @@ export default function ShortlistedPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Manual Interview Link Modal (Fallback) */}
+      {interviewModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fadeIn"
+            onClick={() => setInterviewModal(null)}
+          />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-5 animate-slideUp">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center">
+                  <Video className="text-blue-500" size={18} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-800">Manual Meet Link</h3>
+                  <p className="text-xs text-gray-400">Add a link for candidates who can&apos;t auto-book</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setInterviewModal(null)}
+                className="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="bg-amber-50 border border-amber-100 rounded-xl p-3">
+              <p className="text-xs text-amber-700 leading-relaxed">
+                💡 <span className="font-semibold">Tip:</span> Candidates can auto-book interview slots from their dashboard if you&apos;ve set up your availability. Use this manual option only as a fallback.
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-gray-700">Google Meet URL</label>
+              <input
+                type="url"
+                placeholder="https://meet.google.com/abc-defg-hij"
+                value={interviewModal.link}
+                onChange={(e) => setInterviewModal((prev) => ({ ...prev, link: e.target.value }))}
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all placeholder:text-gray-300"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-gray-700">
+                Scheduled Time <span className="text-gray-400 font-normal">(optional)</span>
+              </label>
+              <input
+                type="datetime-local"
+                value={interviewModal.scheduledAt}
+                onChange={(e) => setInterviewModal((prev) => ({ ...prev, scheduledAt: e.target.value }))}
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all text-gray-600"
+              />
+            </div>
+
+            <button
+              onClick={handleSaveInterview}
+              disabled={interviewModal.saving}
+              className="w-full flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl text-sm transition-all cursor-pointer"
+            >
+              {interviewModal.saving ? (
+                <>
+                  <LoaderCircle className="animate-spin" size={16} /> Saving...
+                </>
+              ) : (
+                <>
+                  <Calendar size={16} /> Save & Notify Candidate
+                </>
+              )}
+            </button>
           </div>
         </div>
       )}
