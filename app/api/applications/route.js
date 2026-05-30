@@ -6,6 +6,8 @@ import Job from "@/lib/models/Job";
 import User from "@/lib/models/User";
 import { calculateMatchScore } from "@/lib/matching";
 import Booking from "@/lib/models/Booking";
+import { extractTextFromUrl } from "@/lib/extract-text";
+import { analyzeResumeScore } from "@/lib/ai-scoring";
 
 // GET /api/applications - Get current user's applications
 export async function GET() {
@@ -91,16 +93,39 @@ export async function POST(request) {
       );
     }
 
-    // Get user skills for match score
+    // Get user skills and resume for match score
     const user = await User.findById(session.user.id);
-    const { score } = calculateMatchScore(user?.skills || [], job);
+    let finalScore = 0;
+
+    // First fallback to basic keyword matching
+    const { score: basicScore } = calculateMatchScore(user?.skills || [], job);
+    finalScore = basicScore;
+
+    // Try AI Scoring if resume is available
+    if (user?.resume) {
+      try {
+        console.log(`Extracting text from resume URL: ${user.resume}`);
+        const resumeText = await extractTextFromUrl(user.resume);
+        console.log(`Running AI resume analysis for application to job ${jobId}`);
+        const aiAnalysis = await analyzeResumeScore(resumeText, job.description);
+        if (aiAnalysis && typeof aiAnalysis.overallScore === 'number') {
+          finalScore = aiAnalysis.overallScore;
+          console.log(`AI Score calculated successfully: ${finalScore}`);
+        }
+      } catch (err) {
+        console.error("AI Scoring failed during application, falling back to basic score:", err.message);
+        // We gracefully ignore the error so the application still succeeds
+      }
+    } else {
+      console.log("User has no resume attached. Using basic match score.");
+    }
 
     const application = await Application.create({
       applicant: session.user.id,
       job: jobId,
       recruiter: job.postedBy,
       status: "Pending",
-      matchScore: score,
+      matchScore: finalScore,
       resumeLink: user?.resume || "",
     });
 

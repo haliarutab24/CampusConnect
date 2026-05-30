@@ -2,6 +2,7 @@
 
 import { SessionProvider } from "next-auth/react";
 import { Toaster } from "react-hot-toast";
+import Chatbot from "@/components/Chatbot";
 
 export default function Providers({ children }) {
   return (
@@ -19,6 +20,8 @@ export default function Providers({ children }) {
           },
         }}
       />
+      {/* Global AI Career Assistant — visible on all pages */}
+      <Chatbot />
     </SessionProvider>
   );
 }
