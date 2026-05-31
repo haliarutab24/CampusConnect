@@ -9,7 +9,7 @@ const nextConfig = {
     ],
   },
   // Suppress punycode deprecation warning from mongoose
-  serverExternalPackages: ["mongoose", "pdfjs-dist", "mammoth"],
+  serverExternalPackages: ["mongoose", "pdf-parse", "mammoth"],
   experimental: {
     // Allow larger request bodies for file uploads (resume analyzer)
     serverActions: {

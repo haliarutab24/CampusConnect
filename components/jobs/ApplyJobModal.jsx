@@ -382,6 +382,11 @@ export default function ApplyJobModal({ isOpen, onClose, job }) {
                       e.target.value = "";
                       return;
                     }
+                    if (file.size > 4 * 1024 * 1024) {
+                      toast.error("File must be under 4MB");
+                      e.target.value = "";
+                      return;
+                    }
                     setResumeFile(file);
                   }
                 }}
