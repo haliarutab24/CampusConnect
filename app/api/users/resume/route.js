@@ -2,10 +2,9 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import connectDB from "@/lib/db";
 import User from "@/lib/models/User";
-import fs from "fs/promises";
-import path from "path";
+import { uploadToCloudinary } from "@/lib/cloudinary";
 
-// POST /api/users/resume - Upload resume
+// POST /api/users/resume - Upload resume to Cloudinary
 export async function POST(request) {
   try {
     const session = await auth();
@@ -41,25 +40,28 @@ export async function POST(request) {
       );
     }
 
+    // Max 4MB (under Vercel's 4.5MB body limit)
+    if (file.size > 4 * 1024 * 1024) {
+      return NextResponse.json(
+        { success: false, message: "Resume must be under 4MB" },
+        { status: 400 }
+      );
+    }
+
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Save locally to public/uploads/resumes
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "resumes");
-    try {
-      await fs.access(uploadDir);
-    } catch {
-      await fs.mkdir(uploadDir, { recursive: true });
-    }
+    // Upload to Cloudinary (works on Vercel — no local filesystem needed)
+    const uploadResult = await uploadToCloudinary(buffer, {
+      folder: "campus-connect/resumes",
+      resource_type: "raw",          // raw = non-image files (PDF, DOCX)
+      public_id: `${session.user.id}-${Date.now()}`,
+      overwrite: true,
+    });
 
-    const ext = path.extname(file.name) || (file.type === "application/pdf" ? ".pdf" : ".docx");
-    const safeOriginalName = file.name ? file.name.replace(/[^a-zA-Z0-9.-]/g, '_') : `resume${ext}`;
-    const filename = `${Date.now()}-${safeOriginalName}`;
-    const filepath = path.join(uploadDir, filename);
+    const resumeUrl = uploadResult.secure_url;
 
-    await fs.writeFile(filepath, buffer);
-    const resumeUrl = `/uploads/resumes/${filename}`;
-
+    // Save the Cloudinary URL to MongoDB
     const user = await User.findByIdAndUpdate(
       session.user.id,
       { resume: resumeUrl },
@@ -74,7 +76,7 @@ export async function POST(request) {
   } catch (error) {
     console.error("Resume upload error:", error);
     return NextResponse.json(
-      { success: false, message: "Upload failed" },
+      { success: false, message: "Failed to upload resume. Please try again." },
       { status: 500 }
     );
   }
