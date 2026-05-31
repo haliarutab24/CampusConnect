@@ -31,9 +31,9 @@ export async function POST(request) {
 
       if (resumeFile && resumeFile.size > 0) {
         // Validate file size (max 5MB)
-        if (resumeFile.size > 5 * 1024 * 1024) {
+        if (resumeFile.size > 4 * 1024 * 1024) {
           return NextResponse.json(
-            { success: false, message: "File size must be under 5MB" },
+            { success: false, message: "File size must be under 4MB" },
             { status: 400 }
           );
         }

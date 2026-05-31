@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 
 const ACCEPTED_FILE_TYPES = ".pdf,.docx,.doc,.txt,.text,.md";
-const MAX_FILE_SIZE_MB = 5;
+const MAX_FILE_SIZE_MB = 4;
 
 export default function ResumeAnalyzerPage() {
   const [inputMode, setInputMode] = useState("upload"); // "upload" or "paste"
