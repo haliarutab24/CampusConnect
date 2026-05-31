@@ -10,6 +10,28 @@ import {
 const ACCEPTED_FILE_TYPES = ".pdf,.docx,.doc,.txt,.text,.md";
 const MAX_FILE_SIZE_MB = 4;
 
+// Extract text from a PDF file using pdfjs-dist IN THE BROWSER
+// This avoids server-side DOMMatrix crashes on Vercel serverless
+async function extractPdfTextInBrowser(file) {
+  const pdfjs = await import("pdfjs-dist");
+  // Use CDN worker so Next.js doesn't try to bundle it
+  pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.mjs`;
+
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjs.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
+
+  let fullText = "";
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    fullText += content.items.map((item) => item.str).join(" ") + "\n";
+  }
+
+  const text = fullText.trim();
+  if (!text) throw new Error("No readable text found in PDF. It may be image-based or scanned.");
+  return text;
+}
+
 export default function ResumeAnalyzerPage() {
   const [inputMode, setInputMode] = useState("upload"); // "upload" or "paste"
   const [resumeText, setResumeText] = useState("");
@@ -72,29 +94,47 @@ export default function ResumeAnalyzerPage() {
     setAnalysis(null);
 
     try {
-      let res;
+      let textToAnalyze = resumeText;
 
       if (inputMode === "upload" && resumeFile) {
-        // Send as FormData with file
-        const formData = new FormData();
-        formData.append("resumeFile", resumeFile);
-        formData.append("jobDescription", jobDescription);
-        res = await fetch("/api/resume-analyzer", {
-          method: "POST",
-          body: formData,
-        });
-      } else {
-        // Send as FormData with pasted text
-        const formData = new FormData();
-        formData.append("resumeText", resumeText);
-        formData.append("jobDescription", jobDescription);
-        res = await fetch("/api/resume-analyzer", {
-          method: "POST",
-          body: formData,
-        });
+        const ext = resumeFile.name.split(".").pop()?.toLowerCase();
+
+        if (ext === "pdf") {
+          // Extract PDF text IN THE BROWSER — avoids all server-side PDF parser issues
+          toast.loading("Reading PDF...", { id: "pdf-extract" });
+          try {
+            textToAnalyze = await extractPdfTextInBrowser(resumeFile);
+            toast.dismiss("pdf-extract");
+          } catch (pdfErr) {
+            toast.dismiss("pdf-extract");
+            toast.error(pdfErr.message || "Could not read PDF. Try pasting the text instead.");
+            setLoading(false);
+            return;
+          }
+        } else {
+          // For DOCX/TXT — send file to server (mammoth works fine server-side)
+          const formData = new FormData();
+          formData.append("resumeFile", resumeFile);
+          formData.append("jobDescription", jobDescription);
+          const res = await fetch("/api/resume-analyzer", { method: "POST", body: formData });
+          const data = await res.json();
+          if (data.success) {
+            setAnalysis(data.analysis);
+            toast.success("Analysis complete!");
+          } else {
+            toast.error(data.message);
+          }
+          return;
+        }
       }
 
+      // Send extracted text (from PDF browser extraction or pasted text) to server
+      const formData = new FormData();
+      formData.append("resumeText", textToAnalyze);
+      formData.append("jobDescription", jobDescription);
+      const res = await fetch("/api/resume-analyzer", { method: "POST", body: formData });
       const data = await res.json();
+
       if (data.success) {
         setAnalysis(data.analysis);
         toast.success("Analysis complete!");
