@@ -19,6 +19,7 @@ export default function JobDetailPage() {
   const [loading, setLoading] = useState(true);
   const [applying, setApplying] = useState(false);
   const [alreadyApplied, setAlreadyApplied] = useState(false);
+  const [matchScore, setMatchScore] = useState(null);
 
   useEffect(() => {
     const fetchJob = async () => {
@@ -54,8 +55,11 @@ export default function JobDetailPage() {
         const res = await fetch("/api/applications");
         const data = await res.json();
         if (data.success) {
-          const applied = data.applications.some((app) => app.job?._id === id);
-          setAlreadyApplied(applied);
+          const existingApp = data.applications.find((app) => app.job?._id === id);
+          if (existingApp) {
+            setAlreadyApplied(true);
+            setMatchScore(existingApp.matchScore || 0);
+          }
         }
       } catch {}
     };
@@ -80,7 +84,9 @@ export default function JobDetailPage() {
       });
       const data = await res.json();
       if (data.success) {
-        toast.success(data.message);
+        const score = data.matchScore || 0;
+        setMatchScore(score);
+        toast.success(`Applied successfully! CV Match: ${score}%`);
         setAlreadyApplied(true);
       } else {
         toast.error(data.message);
@@ -167,8 +173,18 @@ export default function JobDetailPage() {
               onClick={handleApply}
               disabled={alreadyApplied || applying || job.status === "Closed"}
             >
-              {applying ? "Applying..." : alreadyApplied ? "Already Applied" : job.status === "Closed" ? "Job Closed" : "Apply Now"}
+              {applying ? "Analyzing & Applying..." : alreadyApplied ? "Already Applied ✓" : job.status === "Closed" ? "Job Closed" : "Apply Now"}
             </button>
+            {alreadyApplied && matchScore !== null && (
+              <span className={`text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5 ${
+                matchScore >= 75 ? "bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200"
+                : matchScore >= 50 ? "bg-blue-50 text-blue-600 ring-1 ring-blue-200"
+                : matchScore >= 25 ? "bg-amber-50 text-amber-600 ring-1 ring-amber-200"
+                : "bg-red-50 text-red-500 ring-1 ring-red-200"
+              }`}>
+                CV Match: {matchScore}%
+              </span>
+            )}
             <span className="flex items-center gap-1.5 text-sm text-gray-500">
               <Clock size={14} />
               Posted {moment(job.createdAt).fromNow()}

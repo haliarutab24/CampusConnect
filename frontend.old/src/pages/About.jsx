@@ -16,7 +16,7 @@ const About = () => {
 
         {/* About Section */}
         <div className="mt-16">
-          <h1 className="text-3xl md:text-4xl font-semibold mb-8 text-center text-gray-700">
+          <h1 className="text-3xl md:text-4xl  mb-8 text-center text-gray-700">
             About Campus Connect
           </h1>
           <div className="max-w-4xl text-center mx-auto space-y-6 text-gray-600">
@@ -26,12 +26,7 @@ const About = () => {
               whileInView="visible"
               className="leading-relaxed"
             >
-              Far much that one rank beheld bluebird after outside ignobly
-              allegedly more when oh arrogantly vehement irresistibly fussy
-              penguin insect additionally wow absolutely crud meretriciously
-              hastily dalmatian a glowered inset one echidna cassowary some
-              parrot and much as goodness some froze the sullen much connected
-              bat.
+              CampusConnect is an intra-university job marketplace designed to bridge the gap between talented students and forward-thinking companies. Our platform leverages AI-powered job matching and interactive resume analysis to help students find roles that perfectly align with their skills and goals , transforming campus hiring into a smart, data-driven process.
             </motion.p>
             <motion.p
               variants={SlideUp(0.5)}
@@ -52,7 +47,7 @@ const About = () => {
         {/* How It Works Section */}
         <div className="mt-24">
           <div className="text-center mb-12">
-            <h1 className="text-3xl md:text-4xl font-semibold text-gray-800 mb-3">
+            <h1 className="text-3xl md:text-4xl text-gray-800 mb-3">
               How It Works?
             </h1>
             <p className="text-lg text-gray-500">Job for anyone, anywhere</p>
@@ -73,7 +68,7 @@ const About = () => {
                   className="h-16 w-16 object-contain"
                 />
               </div>
-              <h3 className="text-xl font-semibold mb-4 text-gray-800">
+              <h3 className="text-xl mb-4 text-gray-800">
                 Free Resume Assessments
               </h3>
               <p className="text-gray-600">
@@ -96,7 +91,7 @@ const About = () => {
                   className="h-16 w-16 object-contain"
                 />
               </div>
-              <h3 className="text-xl font-semibold mb-4 text-gray-800">
+              <h3 className="text-xl  mb-4 text-gray-800">
                 Job Fit Scoring
               </h3>
               <p className="text-gray-600">
@@ -118,7 +113,7 @@ const About = () => {
                   className="h-16 w-16 object-contain"
                 />
               </div>
-              <h3 className="text-xl font-semibold mb-4 text-gray-800">
+              <h3 className="text-xl mb-4 text-gray-800">
                 Help Every Step of the Way
               </h3>
               <p className="text-gray-600">

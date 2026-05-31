@@ -29,7 +29,7 @@ const Counter = () => {
               variants={SlideUp(0.5)}
               initial="hidden"
               whileInView="visible"
-              className="text-3xl sm:text-4xl font-bold text-gray-900 mb-6"
+              className="text-3xl md:text-4xl text-gray-900 mb-6"
             >
               Millions of Jobs. Find the one that{" "}
               <span className="text-blue-600">suits you.</span>
@@ -84,7 +84,7 @@ const Counter = () => {
       {/* Stats Counter Section */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 p-8">
         <div className="text-center p-4">
-          <div className="text-4xl font-bold text-blue-600 mb-2">
+          <div className="text-4xl text-blue-600 mb-2">
             <CountUp
               start={1}
               end={898}
@@ -97,7 +97,7 @@ const Counter = () => {
           <span className="text-gray-600">Daily active users</span>
         </div>
         <div className="text-center p-4">
-          <div className="text-4xl font-bold text-blue-600 mb-2">
+          <div className="text-4xl  text-blue-600 mb-2">
             <CountUp
               start={1}
               end={298}
@@ -110,7 +110,7 @@ const Counter = () => {
           <span className="text-gray-600">Open job positions</span>
         </div>
         <div className="text-center p-4">
-          <div className="text-4xl font-bold text-blue-600 mb-2">
+          <div className="text-4xl text-blue-600 mb-2">
             <CountUp
               start={1}
               end={20000}

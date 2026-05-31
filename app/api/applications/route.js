@@ -6,8 +6,53 @@ import Job from "@/lib/models/Job";
 import User from "@/lib/models/User";
 import { calculateMatchScore } from "@/lib/matching";
 import Booking from "@/lib/models/Booking";
-import { extractTextFromUrl } from "@/lib/extract-text";
+import { extractTextFromUrl, extractTextFromFile } from "@/lib/extract-text";
 import { analyzeResumeScore } from "@/lib/ai-scoring";
+import fs from "fs/promises";
+import path from "path";
+
+/**
+ * Extract resume text from a resume path/URL.
+ * Handles both local file paths (/uploads/resumes/...) and external URLs (https://...).
+ */
+async function getResumeText(resumePath) {
+  if (!resumePath) return null;
+
+  // Local file: starts with / but not http
+  if (resumePath.startsWith("/") && !resumePath.startsWith("http")) {
+    const absolutePath = path.join(process.cwd(), "public", resumePath);
+    console.log(`Reading local resume file: ${absolutePath}`);
+
+    try {
+      await fs.access(absolutePath);
+    } catch {
+      console.error(`Resume file not found on disk: ${absolutePath}`);
+      return null;
+    }
+
+    const buffer = await fs.readFile(absolutePath);
+    const fileName = path.basename(resumePath);
+    const ext = path.extname(fileName).toLowerCase();
+
+    // Determine MIME type from extension
+    const mimeMap = {
+      ".pdf": "application/pdf",
+      ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      ".doc": "application/msword",
+      ".txt": "text/plain",
+      ".md": "text/markdown",
+    };
+    const mimeType = mimeMap[ext] || "application/octet-stream";
+
+    const text = await extractTextFromFile(buffer, mimeType, fileName);
+    console.log(`Successfully extracted ${text.length} characters from local resume`);
+    return text;
+  }
+
+  // External URL (Cloudinary, etc.)
+  console.log(`Fetching resume from external URL: ${resumePath}`);
+  return await extractTextFromUrl(resumePath);
+}
 
 // GET /api/applications - Get current user's applications
 export async function GET() {
@@ -96,6 +141,7 @@ export async function POST(request) {
     // Get user skills and resume for match score
     const user = await User.findById(session.user.id);
     let finalScore = 0;
+    let aiAnalysisResult = null;
 
     // First fallback to basic keyword matching
     const { score: basicScore } = calculateMatchScore(user?.skills || [], job);
@@ -104,13 +150,17 @@ export async function POST(request) {
     // Try AI Scoring if resume is available
     if (user?.resume) {
       try {
-        console.log(`Extracting text from resume URL: ${user.resume}`);
-        const resumeText = await extractTextFromUrl(user.resume);
-        console.log(`Running AI resume analysis for application to job ${jobId}`);
-        const aiAnalysis = await analyzeResumeScore(resumeText, job.description);
-        if (aiAnalysis && typeof aiAnalysis.overallScore === 'number') {
-          finalScore = aiAnalysis.overallScore;
-          console.log(`AI Score calculated successfully: ${finalScore}`);
+        const resumeText = await getResumeText(user.resume);
+        if (resumeText && resumeText.trim().length > 0) {
+          console.log(`Running AI resume analysis for application to job ${jobId} (${resumeText.length} chars)`);
+          const aiAnalysis = await analyzeResumeScore(resumeText, job.description);
+          if (aiAnalysis && typeof aiAnalysis.overallScore === 'number') {
+            finalScore = aiAnalysis.overallScore;
+            aiAnalysisResult = aiAnalysis;
+            console.log(`AI Score calculated successfully: ${finalScore}`);
+          }
+        } else {
+          console.warn("Resume text extraction returned empty content. Using basic score.");
         }
       } catch (err) {
         console.error("AI Scoring failed during application, falling back to basic score:", err.message);
@@ -134,7 +184,17 @@ export async function POST(request) {
     await job.save();
 
     return NextResponse.json(
-      { success: true, message: "Job applied successfully", application },
+      {
+        success: true,
+        message: "Job applied successfully",
+        application,
+        matchScore: finalScore,
+        aiAnalysis: aiAnalysisResult ? {
+          overallScore: aiAnalysisResult.overallScore,
+          strengths: aiAnalysisResult.strengths,
+          areasToImprove: aiAnalysisResult.areasToImprove,
+        } : null,
+      },
       { status: 201 }
     );
   } catch (error) {

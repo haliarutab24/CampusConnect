@@ -161,9 +161,29 @@ export default function StudentApplicationsPage() {
                       <td className="px-5 py-4 text-gray-600">{app.job?.location}</td>
                       <td className="px-5 py-4 text-gray-600">{app.job?.category}</td>
                       <td className="px-5 py-4">
-                        <span className={`text-xs font-medium ${app.matchScore >= 60 ? "text-green-600" : "text-gray-500"}`}>
-                          {app.matchScore || 0}%
-                        </span>
+                        {(() => {
+                          const score = app.matchScore || 0;
+                          const colors = score >= 75
+                            ? { bg: "bg-emerald-50", text: "text-emerald-700", ring: "ring-emerald-200", bar: "bg-emerald-500" }
+                            : score >= 50
+                            ? { bg: "bg-blue-50", text: "text-blue-700", ring: "ring-blue-200", bar: "bg-blue-500" }
+                            : score >= 25
+                            ? { bg: "bg-amber-50", text: "text-amber-700", ring: "ring-amber-200", bar: "bg-amber-500" }
+                            : { bg: "bg-red-50", text: "text-red-600", ring: "ring-red-200", bar: "bg-red-400" };
+                          return (
+                            <div className="flex flex-col items-center gap-1">
+                              <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ring-1 ${colors.bg} ${colors.text} ${colors.ring}`}>
+                                {score}%
+                              </span>
+                              <div className="w-14 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                <div
+                                  className={`h-full rounded-full transition-all ${colors.bar}`}
+                                  style={{ width: `${score}%` }}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </td>
                       <td className="px-5 py-4">
                         <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${
