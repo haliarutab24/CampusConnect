@@ -14,8 +14,10 @@ const MAX_FILE_SIZE_MB = 4;
 // This avoids server-side DOMMatrix crashes on Vercel serverless
 async function extractPdfTextInBrowser(file) {
   const pdfjs = await import("pdfjs-dist");
-  // Use CDN worker so Next.js doesn't try to bundle it
-  pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.mjs`;
+
+  // Use jsDelivr CDN with exact version — avoids worker URL issues
+  pdfjs.GlobalWorkerOptions.workerSrc =
+    "https://cdn.jsdelivr.net/npm/pdfjs-dist@5.6.205/build/pdf.worker.min.mjs";
 
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjs.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
