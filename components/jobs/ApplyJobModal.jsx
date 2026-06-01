@@ -14,6 +14,30 @@ const getScoreColor = (score) => {
   return { text: "text-red-500", bg: "bg-red-50", ring: "ring-red-200", bar: "bg-red-400", label: "Needs Improvement" };
 };
 
+/**
+ * Extract text from a PDF file entirely in the browser using pdfjs-dist.
+ * This avoids the server-side DOMMatrix crash caused by pdf-parse on Vercel.
+ */
+async function extractPdfTextInBrowser(file) {
+  const pdfjs = await import("pdfjs-dist");
+  pdfjs.GlobalWorkerOptions.workerSrc =
+    "https://cdn.jsdelivr.net/npm/pdfjs-dist@5.6.205/build/pdf.worker.min.mjs";
+
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjs.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
+
+  let fullText = "";
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    fullText += content.items.map((item) => item.str).join(" ") + "\n";
+  }
+
+  const text = fullText.trim();
+  if (!text) throw new Error("No readable text found in PDF. It may be image-based or scanned.");
+  return text;
+}
+
 export default function ApplyJobModal({ isOpen, onClose, job }) {
   const { data: session } = useSession();
   const router = useRouter();
@@ -35,7 +59,7 @@ export default function ApplyJobModal({ isOpen, onClose, job }) {
 
     setAnalyzing(true);
     try {
-      // If user uploaded a new file, upload it first
+      // If user uploaded a new file, upload it to their profile first
       if (resumeFile) {
         const allowedTypes = [
           "application/pdf",
@@ -62,16 +86,14 @@ export default function ApplyJobModal({ isOpen, onClose, job }) {
         }
       }
 
-      // Analyze using the resume-analyzer API
-      // Strip HTML from job description for analysis
+      // Strip HTML from job description
       const tempDiv = document.createElement("div");
       tempDiv.innerHTML = job.description || "";
       const plainDescription = tempDiv.textContent || tempDiv.innerText || "";
 
-      const formData = new FormData();
-      if (resumeFile) {
-        formData.append("resumeFile", resumeFile);
-      } else {
+      // Resolve which file to analyze
+      let fileToAnalyze = resumeFile;
+      if (!fileToAnalyze) {
         // Fetch user's existing resume from their profile
         const userRes = await fetch("/api/users/me");
         const userData = await userRes.json();
@@ -80,7 +102,6 @@ export default function ApplyJobModal({ isOpen, onClose, job }) {
           setAnalyzing(false);
           return;
         }
-        // Fetch resume file content and send as file
         const resumeResponse = await fetch(userData.user.resume);
         if (!resumeResponse.ok) {
           toast.error("Could not read your resume file. Please upload a new one.");
@@ -89,8 +110,29 @@ export default function ApplyJobModal({ isOpen, onClose, job }) {
         }
         const resumeBlob = await resumeResponse.blob();
         const fileName = userData.user.resume.split("/").pop() || "resume.pdf";
-        const resumeFileObj = new File([resumeBlob], fileName, { type: resumeBlob.type || "application/pdf" });
-        formData.append("resumeFile", resumeFileObj);
+        fileToAnalyze = new File([resumeBlob], fileName, { type: resumeBlob.type || "application/pdf" });
+      }
+
+      const formData = new FormData();
+      const ext = fileToAnalyze.name.split(".").pop()?.toLowerCase();
+
+      if (ext === "pdf") {
+        // Extract PDF text in the BROWSER to avoid server-side DOMMatrix crash on Vercel
+        toast.loading("Reading PDF...", { id: "pdf-extract" });
+        let pdfText;
+        try {
+          pdfText = await extractPdfTextInBrowser(fileToAnalyze);
+          toast.dismiss("pdf-extract");
+        } catch (pdfErr) {
+          toast.dismiss("pdf-extract");
+          toast.error(pdfErr.message || "Could not read PDF. Try a DOCX file instead.");
+          setAnalyzing(false);
+          return;
+        }
+        formData.append("resumeText", pdfText);
+      } else {
+        // DOCX / TXT — send raw file; server-side mammoth handles these fine
+        formData.append("resumeFile", fileToAnalyze);
       }
       formData.append("jobDescription", plainDescription);
 
