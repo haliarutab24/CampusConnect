@@ -219,6 +219,19 @@ export default function StudentApplicationsPage() {
                               </span>
                             )}
                           </div>
+                        ) : app.status === "Shortlisted" && app.booking ? (
+                          <div className="flex flex-col items-center gap-1">
+                            <span className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 px-3.5 py-2 rounded-xl text-xs font-semibold">
+                              <Clock size={13} /> Interview Booked
+                            </span>
+                            {app.interviewScheduledAt && (
+                              <span className="text-[10px] text-gray-400 flex items-center gap-0.5">
+                                <Calendar size={9} />
+                                {moment(app.interviewScheduledAt).format("MMM DD, h:mm A")}
+                              </span>
+                            )}
+                            <span className="text-[10px] text-gray-400">Meeting link pending</span>
+                          </div>
                         ) : app.status === "Shortlisted" ? (
                           <button
                             onClick={() => openBookingModal(app)}
@@ -366,7 +379,7 @@ export default function StudentApplicationsPage() {
                 >
                   {bookingInProgress ? (
                     <>
-                      <LoaderCircle className="animate-spin" size={16} /> Booking & creating Meet link...
+                      <LoaderCircle className="animate-spin" size={16} /> Booking interview...
                     </>
                   ) : (
                     <>
@@ -376,7 +389,7 @@ export default function StudentApplicationsPage() {
                 </button>
 
                 <p className="text-[10px] text-gray-400 text-center">
-                  A Google Calendar invite with a Meet link will be sent to both you and the recruiter.
+                  If Google Calendar is connected, a Meet link is created automatically. Otherwise the recruiter will share the link.
                 </p>
               </>
             )}

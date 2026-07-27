@@ -116,7 +116,7 @@ export default function AvailabilityPage() {
         <Info className="text-blue-500 shrink-0 mt-0.5" size={18} />
         <div className="text-sm text-blue-700 leading-relaxed">
           <span className="font-semibold">How it works:</span> Toggle your available days, set time windows, and choose your slot duration.
-          Candidates will see open slots for the next 14 days and can book directly. A Google Calendar event with a Meet link will be auto-created.
+          Candidates will see open slots for the next 14 days and can book directly. If Google Calendar is connected, a Meet link can be created automatically; otherwise you can add the meeting link manually.
         </div>
       </div>
 

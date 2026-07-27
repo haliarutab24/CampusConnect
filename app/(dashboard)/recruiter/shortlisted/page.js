@@ -168,6 +168,24 @@ export default function ShortlistedPage() {
                             </span>
                           )}
                         </div>
+                      ) : app.status === "Shortlisted" && app.booking ? (
+                        <div className="flex flex-col items-center gap-1.5">
+                          <span className="text-[10px] text-amber-700 font-medium bg-amber-50 px-2 py-0.5 rounded-full">
+                            Candidate booked, link pending
+                          </span>
+                          {app.interviewScheduledAt && (
+                            <span className="text-[10px] text-gray-400 flex items-center gap-0.5">
+                              <Calendar size={9} /> {moment(app.interviewScheduledAt).format("MMM DD, h:mm A")}
+                            </span>
+                          )}
+                          <button
+                            onClick={() => setInterviewModal({ appId: app._id, link: "", scheduledAt: app.interviewScheduledAt ? moment(app.interviewScheduledAt).format("YYYY-MM-DDTHH:mm") : "", saving: false })}
+                            className="inline-flex items-center gap-1 text-gray-400 hover:text-blue-600 text-[10px] transition-colors cursor-pointer"
+                            title="Add a meeting link"
+                          >
+                            <Video size={10} /> Add link manually
+                          </button>
+                        </div>
                       ) : app.status === "Shortlisted" ? (
                         <div className="flex flex-col items-center gap-1.5">
                           <span className="text-[10px] text-emerald-600 font-medium bg-emerald-50 px-2 py-0.5 rounded-full">

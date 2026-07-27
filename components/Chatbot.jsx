@@ -151,6 +151,12 @@ export default function Chatbot() {
   const messagesEndRef = useRef(null);
   const scrollContainerRef = useRef(null);
   const inputRef = useRef(null);
+  const messageCounterRef = useRef(0);
+
+  const nextMessageId = useCallback((prefix) => {
+    messageCounterRef.current += 1;
+    return `${prefix}-${messageCounterRef.current}`;
+  }, []);
 
   // Auto-scroll to bottom
   const scrollToBottom = useCallback((behavior = "smooth") => {
@@ -188,7 +194,7 @@ export default function Chatbot() {
     setError(null);
 
     const userMessage = {
-      id: Date.now().toString(),
+      id: nextMessageId("user"),
       role: "user",
       content: userText,
       timestamp: new Date(),
@@ -216,7 +222,7 @@ export default function Chatbot() {
       }
 
       const botMessage = {
-        id: (Date.now() + 1).toString(),
+        id: nextMessageId("assistant"),
         role: "assistant",
         content: data.reply,
         timestamp: new Date(),
